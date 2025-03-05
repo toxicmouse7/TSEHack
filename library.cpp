@@ -60,12 +60,6 @@ int __cdecl HookedLuaPcall(int *lua_state, int nargs, int nresults, int msgh)
         return lua->pcall_trampoline(lua_state, nargs, nresults, msgh);
     }
 
-    // std::ifstream custom(R"(C:\Users\Aleksej\CLionProjects\showdown-hack\custom.lua)");
-    // std::stringstream buffer;
-    // buffer << custom.rdbuf();
-    // code = buffer.str();
-    // custom.close();
-
     auto ret = lua->loadstring(lua_state, code.c_str());
     if (ret)
     {
