@@ -41,7 +41,7 @@ if (get_current_world_name() == "game_world") then
 	local result = {}
 
 	for peer_id, player in pairs(players) do
-		local damage_receiver = EntityAux.state(unit, "damage_receiver_ext")
+		local damage_receiver = EntityAux.state(player.avatar_unit, "damage_receiver_ext")
 		if peer_id ~= Network.peer_id() and damage_receiver ~= nil and not damage_receiver.dead then
 			local player_screen_position = get_player_screen_position(local_camera, player)
 			result[peer_id] = {}
