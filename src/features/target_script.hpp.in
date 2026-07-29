@@ -1,0 +1,10 @@
+#pragma once
+
+#include <string_view>
+
+namespace features
+{
+    inline constexpr std::string_view target_script = R"SHOWDOWN_LUA(
+@TARGET_SCRIPT@
+)SHOWDOWN_LUA";
+}
