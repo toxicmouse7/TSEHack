@@ -3,6 +3,8 @@
 #include <MinHook.h>
 #include <d3d11.h>
 #include <dxgi.h>
+#include <optional>
+#include <string>
 #include <windows.h>
 
 #include "core/cheat_state.hpp"
@@ -29,6 +31,47 @@ namespace
     core::CheatState* state{};
     bool imgui_initialized = false;
     bool menu_visible = true;
+    bool waiting_for_activation_key = false;
+    bool activation_key_capture_ready = false;
+
+    [[nodiscard]] bool any_virtual_key_down()
+    {
+        for (int key = 1; key < 256; ++key)
+        {
+            if ((GetAsyncKeyState(key) & 0x8000) != 0) return true;
+        }
+        return false;
+    }
+
+    [[nodiscard]] std::optional<int> pressed_virtual_key()
+    {
+        for (int key = 1; key < 256; ++key)
+        {
+            if ((GetAsyncKeyState(key) & 0x8000) != 0) return key;
+        }
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::string virtual_key_name(const int key)
+    {
+        switch (key)
+        {
+        case VK_LBUTTON: return "Left mouse";
+        case VK_RBUTTON: return "Right mouse";
+        case VK_MBUTTON: return "Middle mouse";
+        case VK_XBUTTON1: return "Mouse 4";
+        case VK_XBUTTON2: return "Mouse 5";
+        default: break;
+        }
+
+        char name[64]{};
+        const auto scan_code = MapVirtualKeyA(key, MAPVK_VK_TO_VSC);
+        if (scan_code != 0 && GetKeyNameTextA(static_cast<LONG>(scan_code << 16), name, sizeof(name)) > 0)
+        {
+            return name;
+        }
+        return "VK " + std::to_string(key);
+    }
 
     void release_render_target()
     {
@@ -54,6 +97,11 @@ namespace
         if (message == WM_KEYUP && w_param == VK_INSERT)
         {
             menu_visible = !menu_visible;
+            return 0;
+        }
+        if (message == WM_KEYUP && w_param == VK_F5 && state)
+        {
+            state->target_assist_enabled.store(!state->target_assist_enabled.load());
             return 0;
         }
         if (menu_visible && imgui_initialized && ImGui_ImplWin32_WndProcHandler(window, message, w_param, l_param))
@@ -125,12 +173,55 @@ namespace
             {
                 state->target_assist_enabled.store(enabled);
             }
+            bool require_activation_key = state->target_assist_require_activation_key.load();
+            if (ImGui::Checkbox("Hold aim key", &require_activation_key))
+            {
+                state->target_assist_require_activation_key.store(require_activation_key);
+            }
+            if (require_activation_key)
+            {
+                ImGui::Text("Aim key: %s", virtual_key_name(state->target_assist_activation_key.load()).c_str());
+                if (waiting_for_activation_key)
+                {
+                    ImGui::TextUnformatted("Release all keys, then press the aim key...");
+                    if (!activation_key_capture_ready)
+                    {
+                        activation_key_capture_ready = !any_virtual_key_down();
+                    }
+                    else if (const auto key = pressed_virtual_key())
+                    {
+                        state->target_assist_activation_key.store(*key);
+                        waiting_for_activation_key = false;
+                    }
+                }
+                else if (ImGui::Button("Set aim key"))
+                {
+                    waiting_for_activation_key = true;
+                    activation_key_capture_ready = false;
+                }
+            }
+            else
+            {
+                waiting_for_activation_key = false;
+            }
             bool esp_enabled = state->esp_enabled.load();
             if (ImGui::Checkbox("Enable ESP", &esp_enabled))
             {
                 state->esp_enabled.store(esp_enabled);
             }
-            ImGui::TextUnformatted("Press Insert to toggle this window.");
+            if (state->unlock_installed.load())
+            {
+                ImGui::TextUnformatted("Local unlock: installed");
+            }
+            else if (state->unlock_requested.load())
+            {
+                ImGui::TextUnformatted("Local unlock: waiting for menu scripts");
+            }
+            else if (ImGui::Button("Unlock all local items"))
+            {
+                state->unlock_requested.store(true);
+            }
+            ImGui::TextUnformatted("Insert: toggle menu. F5: toggle target assist.");
             ImGui::End();
         }
         if (state->esp_enabled.load())

@@ -1,0 +1,10 @@
+#pragma once
+
+#include <string_view>
+
+namespace features
+{
+    inline constexpr std::string_view unlock_script = R"SHOWDOWN_LUA(
+@UNLOCK_SCRIPT@
+)SHOWDOWN_LUA";
+}

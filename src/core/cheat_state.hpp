@@ -4,6 +4,7 @@
 #include <mutex>
 #include <utility>
 #include <vector>
+#include <windows.h>
 
 namespace core
 {
@@ -19,7 +20,11 @@ namespace core
     struct CheatState
     {
         std::atomic_bool target_assist_enabled{false};
+        std::atomic_bool target_assist_require_activation_key{true};
+        std::atomic_int target_assist_activation_key{VK_RBUTTON};
         std::atomic_bool esp_enabled{false};
+        std::atomic_bool unlock_requested{false};
+        std::atomic_bool unlock_installed{false};
 
         void set_esp_boxes(std::vector<EspBox> boxes)
         {

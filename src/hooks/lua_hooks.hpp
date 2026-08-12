@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <optional>
+#include <string_view>
 #include <unordered_map>
 
 #include "core/cheat_state.hpp"
@@ -22,7 +23,9 @@ namespace hooks
         static int __cdecl hooked_pcall(int* lua_state, int nargs, int nresults, int msgh);
 
         int on_pcall(int* lua_state, int nargs, int nresults, int msgh);
-        [[nodiscard]] std::optional<int> target_script_reference(int* lua_state);
+        [[nodiscard]] bool install_unlock_if_ready(int* lua_state);
+        [[nodiscard]] std::optional<int> script_reference(int* lua_state, std::unordered_map<int*, int>& references,
+                                                           std::string_view source, const char* name);
 
         inline static LuaHooks* active_instance_ = nullptr;
         LuaApi api_{};
@@ -32,6 +35,7 @@ namespace hooks
         features::TargetAssist* target_assist_{};
         std::mutex script_references_mutex_;
         std::unordered_map<int*, int> script_references_;
+        std::unordered_map<int*, int> unlock_script_references_;
         bool pcall_hooked_ = false;
     };
 }

@@ -25,4 +25,5 @@ DLL entry → Runtime → Lua hooks → Game-state reader → Target assist
 
 # Controls
 
-Use the overlay checkboxes to toggle target assist and ESP. Press `Insert` to show or hide the overlay.
+Use the overlay checkboxes to toggle target assist and ESP. `Unlock all local items` enables the local session-only
+unlock. Press `Insert` to show or hide the overlay.
