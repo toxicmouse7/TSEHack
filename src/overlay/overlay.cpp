@@ -33,6 +33,9 @@ namespace
     bool menu_visible = true;
     bool waiting_for_activation_key = false;
     bool activation_key_capture_ready = false;
+    bool waiting_for_toggle_key = false;
+    bool toggle_key_capture_ready = false;
+    bool ignore_next_toggle_key_up = false;
 
     [[nodiscard]] bool any_virtual_key_down()
     {
@@ -99,8 +102,13 @@ namespace
             menu_visible = !menu_visible;
             return 0;
         }
-        if (message == WM_KEYUP && w_param == VK_F5 && state)
+        if (message == WM_KEYUP && state && w_param == state->target_assist_toggle_key.load())
         {
+            if (ignore_next_toggle_key_up)
+            {
+                ignore_next_toggle_key_up = false;
+                return 0;
+            }
             state->target_assist_enabled.store(!state->target_assist_enabled.load());
             return 0;
         }
@@ -173,6 +181,26 @@ namespace
             {
                 state->target_assist_enabled.store(enabled);
             }
+            ImGui::Text("Toggle key: %s", virtual_key_name(state->target_assist_toggle_key.load()).c_str());
+            if (waiting_for_toggle_key)
+            {
+                ImGui::TextUnformatted("Release all keys, then press the toggle key...");
+                if (!toggle_key_capture_ready)
+                {
+                    toggle_key_capture_ready = !any_virtual_key_down();
+                }
+                else if (const auto key = pressed_virtual_key())
+                {
+                    state->target_assist_toggle_key.store(*key);
+                    ignore_next_toggle_key_up = true;
+                    waiting_for_toggle_key = false;
+                }
+            }
+            else if (ImGui::Button("Set toggle key"))
+            {
+                waiting_for_toggle_key = true;
+                toggle_key_capture_ready = false;
+            }
             bool require_activation_key = state->target_assist_require_activation_key.load();
             if (ImGui::Checkbox("Hold aim key", &require_activation_key))
             {
@@ -221,7 +249,7 @@ namespace
             {
                 state->unlock_requested.store(true);
             }
-            ImGui::TextUnformatted("Insert: toggle menu. F5: toggle target assist.");
+            ImGui::TextUnformatted("Insert: toggle menu. The selected toggle key controls target assist.");
             ImGui::End();
         }
         if (state->esp_enabled.load())

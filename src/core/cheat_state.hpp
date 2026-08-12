@@ -20,6 +20,7 @@ namespace core
     struct CheatState
     {
         std::atomic_bool target_assist_enabled{false};
+        std::atomic_int target_assist_toggle_key{VK_F5};
         std::atomic_bool target_assist_require_activation_key{true};
         std::atomic_int target_assist_activation_key{VK_RBUTTON};
         std::atomic_bool esp_enabled{false};
