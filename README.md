@@ -1,3 +1,8 @@
+# Features
+- AimBot
+- WallHack
+- Shop unlocker
+
 # Build
 
 The project uses CMake, vcpkg manifest mode, and the `x86-windows-static` triplet:
